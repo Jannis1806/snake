@@ -6,15 +6,12 @@ import android.widget.FrameLayout;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.sql.SQLDataException;
-
 import de.jmueller3.snake.R;
 
 public class MainActivity extends AppCompatActivity {
     private GameController gameController;
     private ControlView controlView;
     private HeaderView headerView;
-    private DatabaseManager databaseManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,18 +22,11 @@ public class MainActivity extends AppCompatActivity {
         controlView = findViewById(R.id.controlView);
         headerView = findViewById(R.id.headerView);
 
-        databaseManager = new DatabaseManager(this);
-        try {
-            databaseManager.open();
-        } catch (SQLDataException e) {
-            throw new RuntimeException(e);
-        }
-
         gameController = new GameController(this, gameContainer, controlView);
         controlView.setGameController(gameController);
         headerView.setGameController(gameController);
 
-        gameController.setOnGameOverListener(new GameController.OnGameOverListener() {
+        gameController.addOnGameOverListener(new GameController.OnGameOverListener() {
             @Override
             public void onGameOver(int points) {
                 showGameOverDialog(points);
@@ -45,11 +35,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showGameOverDialog(int points) {
-        // Alle Timer ausblenden
-        headerView.setBoostTimer(0);
-        headerView.setWallTimer(0);
-        headerView.setInvertControlTimer(0);
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Game Over");
         builder.setMessage("Deine Punkte: " + points);
@@ -66,11 +51,5 @@ public class MainActivity extends AppCompatActivity {
         });
 
         builder.show();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        databaseManager.close();
     }
 }

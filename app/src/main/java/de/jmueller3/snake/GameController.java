@@ -38,12 +38,12 @@ public class GameController {
     private long invertControlEndTime = 0;
     private Handler handler;
     private Runnable gameLoop;
+    private List<OnGameOverListener> gameOverListeners = new ArrayList<>();
     private OnPointsChangeListener onPointsChangeListener;
     private OnPauseStatusChangeListener onPauseStatusChangeListener;
     private OnBoostTimerChangeListener onBoostTimerChangeListener;
     private OnWallTimerChangeListener onWallTimerChangeListener;
     private OnInvertControlTimerChangeListener onInvertControlTimerChangeListener;
-    private OnGameOverListener onGameOverListener;
     private GameView gameView;
     private ControlView controlView;
 
@@ -79,9 +79,7 @@ public class GameController {
                 running = false;
                 pauseGame();
                 removeAllEventsAndTimers();
-                if (onGameOverListener != null) {
-                    onGameOverListener.onGameOver(points);
-                }
+                notifyGameOverListeners(points);
             }
             gameView.invalidate();
         }
@@ -109,7 +107,6 @@ public class GameController {
         } else if (food.getType() == Food.FoodType.LICORICE) {
             activateInvertControl();
         } else {
-            // Verzögerung verringern
             currentDelay = Math.max(MIN_DELAY, currentDelay - DELAY_DECREMENT);
         }
     }
@@ -122,7 +119,6 @@ public class GameController {
         if (controlView != null) {
             controlView.invalidateReferenceValues();
         }
-        // Timer-Callbacks wieder hinzufügen und verbleibende Zeit verwenden
         long currentTime = System.currentTimeMillis();
         if (chocolateBoostRemainingTime > 0) {
             chocolateBoostEndTime = currentTime + chocolateBoostRemainingTime;
@@ -173,7 +169,7 @@ public class GameController {
                         (invertControlActive && type == Food.FoodType.LICORICE) ||
                         wall.contains(position) ||
                         snake.getBody().contains(position)) {
-                    continue; // Überspringe Food, dessen Event noch aktiv ist, Positionen unter der Mauer und Positionen der Schlange
+                    continue;
                 }
                 validFood = true;
                 food = new Food(position, type);
@@ -245,7 +241,6 @@ public class GameController {
             }
         }, duration);
 
-        // Timer für die Anzeige der verbleibenden Zeit
         Runnable chocolateBoostTimerRunnable = new Runnable() {
             @Override
             public void run() {
@@ -273,7 +268,6 @@ public class GameController {
             }
         }, duration);
 
-        // Timer für die Anzeige der verbleibenden Zeit der Wand
         Runnable wallTimerRunnable = new Runnable() {
             @Override
             public void run() {
@@ -300,7 +294,6 @@ public class GameController {
             }
         }, duration);
 
-        // Timer für die Anzeige der verbleibenden Zeit der invertierten Steuerung
         Runnable invertControlTimerRunnable = new Runnable() {
             @Override
             public void run() {
@@ -347,7 +340,6 @@ public class GameController {
         if (onPauseStatusChangeListener != null) {
             onPauseStatusChangeListener.onPauseStatusChange(true);
         }
-        // Timer-Callbacks entfernen und verbleibende Zeit speichern
         handler.removeCallbacks(gameLoop);
         long currentTime = System.currentTimeMillis();
         if (chocolateBoostActive) {
@@ -369,6 +361,7 @@ public class GameController {
             e.printStackTrace();
         }
     }
+
     public void resetGame() {
         try {
             handler.removeCallbacks(gameLoop); // Stoppe den aktuellen Runnable
@@ -403,6 +396,17 @@ public class GameController {
             onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
         }
         newFood();
+        handler.post(gameLoop); // Starte den Runnable
+    }
+
+    public void addOnGameOverListener(OnGameOverListener listener) {
+        gameOverListeners.add(listener);
+    }
+
+    private void notifyGameOverListeners(int points) {
+        for (OnGameOverListener listener : gameOverListeners) {
+            listener.onGameOver(points);
+        }
     }
 
     public void setOnPointsChangeListener(OnPointsChangeListener listener) {
@@ -423,10 +427,6 @@ public class GameController {
 
     public void setOnInvertControlTimerChangeListener(OnInvertControlTimerChangeListener listener) {
         this.onInvertControlTimerChangeListener = listener;
-    }
-
-    public void setOnGameOverListener(OnGameOverListener listener) {
-        this.onGameOverListener = listener;
     }
 
     public Snake getSnake() {

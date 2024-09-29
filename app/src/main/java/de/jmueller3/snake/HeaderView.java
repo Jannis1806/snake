@@ -7,8 +7,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import de.jmueller3.snake.R;
-
 public class HeaderView extends LinearLayout {
     private TextView pointsTextView;
     private TextView boostTimerTextView;
@@ -65,7 +63,7 @@ public class HeaderView extends LinearLayout {
             }
         });
 
-        this.gameController.setOnGameOverListener(new GameController.OnGameOverListener() {
+        this.gameController.addOnGameOverListener(new GameController.OnGameOverListener() {
             @Override
             public void onGameOver(int points) {
                 setBoostTimer(0);
