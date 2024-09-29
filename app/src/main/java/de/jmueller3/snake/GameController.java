@@ -396,7 +396,6 @@ public class GameController {
             onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
         }
         newFood();
-        handler.post(gameLoop); // Starte den Runnable
     }
 
     public void addOnGameOverListener(OnGameOverListener listener) {
