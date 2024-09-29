@@ -5,66 +5,10 @@
     android:orientation="vertical"
     android:background="#CDE8FA">
 
-    <TextView
-        android:id="@+id/title"
+    <de.jmueller3.snake.HeaderView
+        android:id="@+id/headerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Snake"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:gravity="center"
-        android:padding="16dp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/points"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Punkte: 0"
-            android:textSize="18sp"
-            android:textColor="#000000"
-            android:gravity="center"
-            android:padding="8dp" />
-
-        <TextView
-            android:id="@+id/boostTimer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="18sp"
-            android:textColor="#8B4513"
-            android:gravity="center"
-            android:padding="8dp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/wallTimer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="18sp"
-            android:textColor="#808080"
-            android:gravity="center"
-            android:padding="8dp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/invertControlTimer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="18sp"
-            android:textColor="#000000"
-            android:gravity="center"
-            android:padding="8dp"
-            android:visibility="gone" />
-    </LinearLayout>
+        android:layout_height="wrap_content" />
 
     <FrameLayout
         android:id="@+id/gameContainer"
@@ -72,7 +16,7 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <de.kampmann.sensor2.ControlView
+    <de.jmueller3.snake.ControlView
         android:id="@+id/controlView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

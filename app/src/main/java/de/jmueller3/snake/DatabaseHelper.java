@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    static final String DATABASE_NAME = "MY_DATABASE.db";
+    static final String DATABASE_NAME = "SNAKE_DATABASE.db";
     static final int DATABASE_VERSION = 1;
 
     static final String DATABASE_TABLE = "HIGHSCORES";

@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import java.util.Random;
 

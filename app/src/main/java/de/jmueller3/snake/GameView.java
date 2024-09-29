@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -100,10 +100,6 @@ public class GameView extends View {
                 for (Position pos : gameController.getWall()) {
                     canvas.drawRect(offsetX + pos.getX() * blockSize, offsetY + pos.getY() * blockSize, offsetX + (pos.getX() + 1) * blockSize, offsetY + (pos.getY() + 1) * blockSize, paint);
                 }
-            } else {
-                paint.setColor(Color.RED);
-                paint.setTextSize(100);
-                canvas.drawText("Game Over", getWidth() / 4, getHeight() / 2, paint); // Verwende die gesamte Höhe der View
             }
         } catch (Exception e) {
             Log.e("GameView", "Error drawing game", e);

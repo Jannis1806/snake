@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
+import de.jmueller3.snake.R;
+
 public class ControlView extends LinearLayout implements SensorEventListener {
     private GameController gameController;
     private ImageButton buttonSensorControl;
@@ -19,8 +21,11 @@ public class ControlView extends LinearLayout implements SensorEventListener {
     private SensorManager sensorManager;
     private Sensor accelerometerSensor;
     private boolean sensorControlEnabled = false;
+    private boolean referenceValuesSet = false;
     private float referenceX = 0;
     private float referenceY = 0;
+    private float currentX = 0;
+    private float currentY = 0;
 
     public ControlView(Context context) {
         super(context);
@@ -45,10 +50,8 @@ public class ControlView extends LinearLayout implements SensorEventListener {
                 if (gameController != null) {
                     if (gameController.isPaused()) {
                         gameController.resumeGame();
-                        buttonPause.setImageResource(R.drawable.ic_pause);
                     } else {
                         gameController.pauseGame();
-                        buttonPause.setImageResource(R.drawable.ic_resume);
                     }
                 }
             }
@@ -60,10 +63,8 @@ public class ControlView extends LinearLayout implements SensorEventListener {
                 if (gameController != null) {
                     if (sensorControlEnabled) {
                         disableSensorControl();
-                        buttonSensorControl.setImageResource(R.drawable.ic_sensor_off);
                     } else {
                         enableSensorControl();
-                        buttonSensorControl.setImageResource(R.drawable.ic_sensor_on);
                     }
                 }
             }
@@ -86,16 +87,39 @@ public class ControlView extends LinearLayout implements SensorEventListener {
 
     public void setGameController(GameController gameController) {
         this.gameController = gameController;
+        this.gameController.setOnPauseStatusChangeListener(new GameController.OnPauseStatusChangeListener() {
+            @Override
+            public void onPauseStatusChange(boolean paused) {
+                if (paused) {
+                    buttonPause.setImageResource(R.drawable.ic_pause);
+                } else {
+                    buttonPause.setImageResource(R.drawable.ic_resume);
+                }
+            }
+        });
     }
 
     private void enableSensorControl() {
         sensorControlEnabled = true;
+        referenceValuesSet = false; // Referenzwerte zurücksetzen
+        buttonSensorControl.setImageResource(R.drawable.ic_sensor_on);
         sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_UI);
     }
 
     private void disableSensorControl() {
         sensorControlEnabled = false;
+        buttonSensorControl.setImageResource(R.drawable.ic_sensor_off);
         sensorManager.unregisterListener(this);
+    }
+
+    public void invalidateReferenceValues() {
+        referenceValuesSet = false; // Referenzwerte zurücksetzen
+    }
+
+    private void setReferenceValuesToCurrent() {
+        this.referenceX = currentX; // Setze die Referenzwerte auf die aktuellen Werte
+        this.referenceY = currentY;
+        referenceValuesSet = true; // Flag setzen, dass die Referenzwerte gesetzt wurden
     }
 
     @Override
@@ -103,6 +127,15 @@ public class ControlView extends LinearLayout implements SensorEventListener {
         if (sensorControlEnabled && event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             float xAcceleration = event.values[0];
             float yAcceleration = event.values[1];
+
+            // Aktuelle Sensorwerte speichern
+            currentX = xAcceleration;
+            currentY = yAcceleration;
+
+            // Referenzwerte setzen, wenn sie noch nicht gesetzt wurden
+            if (!referenceValuesSet) {
+                setReferenceValuesToCurrent();
+            }
 
             // Berechne die Differenz zur Referenz
             float deltaX = xAcceleration - referenceX;

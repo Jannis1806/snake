@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import java.util.ArrayList;
 
@@ -16,10 +16,6 @@ public class Snake {
 
     public ArrayList<Position> getBody() {
         return body;
-    }
-
-    public char getDirection() {
-        return direction;
     }
 
     public void setDirection(char newDirection) {

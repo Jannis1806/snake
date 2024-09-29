@@ -10,10 +10,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Sensor2"
+        android:theme="@style/Theme.Snake"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="de.jmueller3.snake.MainActivity"
             android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".HighscoreActivity"></activity>
+        <activity android:name="de.jmueller3.snake.HighscoreActivity"></activity>
     </application>
 
 </manifest>

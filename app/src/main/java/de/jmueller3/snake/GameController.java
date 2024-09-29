@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Context;
 import android.os.Handler;
@@ -12,34 +12,37 @@ import java.util.Random;
 public class GameController {
     private static final int NUM_BLOCKS = 15; // Anzahl der Blöcke in Breite und Höhe
     private static final int START_DELAY = 300; // Startverzögerung in Millisekunden
-    private static final int MIN_DELAY = START_DELAY / 2; // Minimale Verzögerung (doppelte Geschwindigkeit)
+    private static final int MIN_DELAY = START_DELAY / 2; // Minimale Verzögerung
     private static final int DELAY_DECREMENT = 10; // Verringerung der Verzögerung pro Futter
-    private static final int CHOCOLATE_SPEED_BOOST = START_DELAY / 3; // 33% schneller
-    private static final int CHOCOLATE_DURATION = 10000; // 10 Sekunden
+    private static final double CHOCOLATE_SPEED_FACTOR = 1.5; // 50% schneller
+    private static final int CHOCOLATE_SPEED_DURATION = 10000; // 10 Sekunden
     private static final int CANDY_WALL_DURATION = 20000; // 20 Sekunden
     private static final int LICORICE_INVERT_DURATION = 5000; // 5 Sekunden
 
     private Snake snake;
     private Food food;
-    private List<Position> wall;
+    private List<Position> wall = new ArrayList<>();
     private boolean running = true;
     private boolean paused = true; // Spiel ist zu Beginn pausiert
-    private int points = 0; // Punkte zählen
+    private int points = 0;
     private int currentDelay = START_DELAY; // Aktuelle Verzögerung
-    private int previousDelay = START_DELAY; // Vorherige Verzögerung
+    private int previousDelay = START_DELAY; // Verzögerung vor Speedboost
     private boolean chocolateBoostActive = false; // Schokoladen-Boost aktiv
     private boolean wallActive = false; // Wand aktiv
     private boolean invertControlActive = false; // Steuerung invertiert
     private Handler handler;
     private Runnable gameLoop;
     private OnPointsChangeListener onPointsChangeListener;
+    private OnPauseStatusChangeListener onPauseStatusChangeListener;
     private OnBoostTimerChangeListener onBoostTimerChangeListener;
     private OnWallTimerChangeListener onWallTimerChangeListener;
     private OnInvertControlTimerChangeListener onInvertControlTimerChangeListener;
     private OnGameOverListener onGameOverListener;
     private GameView gameView;
+    private ControlView controlView;
 
-    public GameController(Context context, ViewGroup parent) {
+    public GameController(Context context, ViewGroup parent, ControlView controlView) {
+        this.controlView = controlView;
         gameView = new GameView(context);
         parent.addView(gameView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -51,82 +54,88 @@ public class GameController {
         gameLoop = new Runnable() {
             @Override
             public void run() {
-                if (running && !paused) {
-                    snake.move();
-                    if (snake.isHeadOnFood(food.getPosition())) {
-                        switch (food.getType()) {
-                            case APPLE:
-                                points += 1;
-                                break;
-                            case BANANA:
-                                points += 5;
-                                break;
-                            default:
-                                points += 3;
-                                break;
-                        }
-                        if (onPointsChangeListener != null) {
-                            onPointsChangeListener.onPointsChange(points);
-                        }
-                        if (food.getType() == Food.FoodType.CHOCOLATE) {
-                            activateChocolateBoost();
-                        } else if (food.getType() == Food.FoodType.CANDY) {
-                            createWall();
-                        } else if (food.getType() == Food.FoodType.LICORICE) {
-                            activateInvertControl();
-                        } else {
-                            // Verzögerung verringern
-                            currentDelay = Math.max(MIN_DELAY, currentDelay - DELAY_DECREMENT);
-                        }
-                        newFood(); // In jedem Fall neues Food erstellen
-                    } else {
-                        snake.shrink();
-                    }
-                    if (snake.checkCollision(NUM_BLOCKS, NUM_BLOCKS) || checkWallCollision()) {
-                        running = false;
-                        removeAllEventsAndTimers();
-                        if (onGameOverListener != null) {
-                            onGameOverListener.onGameOver(points);
-                        }
-                    }
-                    gameView.invalidate();
-                }
+                handleGameTick();
                 handler.postDelayed(this, currentDelay);
             }
         };
     }
 
-    public void startGame() {
-        try {
-            snake = new Snake(NUM_BLOCKS / 2, NUM_BLOCKS / 2);
-            points = 0; // Punkte zurücksetzen
-            currentDelay = START_DELAY; // Verzögerung zurücksetzen
-            previousDelay = START_DELAY; // Vorherige Verzögerung zurücksetzen
-            chocolateBoostActive = false; // Schokoladen-Boost deaktivieren
-            wallActive = false; // Wand deaktivieren
-            invertControlActive = false; // Steuerung normal
-            wall = new ArrayList<>(); // Mauer zurücksetzen
-            if (onPointsChangeListener != null) {
-                onPointsChangeListener.onPointsChange(points);
+    private void handleGameTick() {
+        if (running && !paused) {
+            snake.move();
+            if (snake.isHeadOnFood(food.getPosition())) {
+                handleFoodAction();
+                newFood();
+            } else {
+                snake.shrink();
             }
-            if (onBoostTimerChangeListener != null) {
-                onBoostTimerChangeListener.onBoostTimerChange(0);
+            if (snake.checkCollision(NUM_BLOCKS, NUM_BLOCKS) || checkWallCollision()) {
+                running = false;
+                pauseGame();
+                removeAllEventsAndTimers();
+                if (onGameOverListener != null) {
+                    onGameOverListener.onGameOver(points);
+                }
             }
-            if (onWallTimerChangeListener != null) {
-                onWallTimerChangeListener.onWallTimerChange(0);
-            }
-            if (onInvertControlTimerChangeListener != null) {
-                onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
-            }
-            newFood();
-            handler.post(gameLoop);
-        } catch (Exception e) {
-            e.printStackTrace();
+            gameView.invalidate();
+        }
+    }
+
+    private void handleFoodAction() {
+        switch (food.getType()) {
+            case APPLE:
+                points += 1;
+                break;
+            case BANANA:
+                points += 5;
+                break;
+            default:
+                points += 3;
+                break;
+        }
+        if (onPointsChangeListener != null) {
+            onPointsChangeListener.onPointsChange(points);
+        }
+        if (food.getType() == Food.FoodType.CHOCOLATE) {
+            activateChocolateBoost();
+        } else if (food.getType() == Food.FoodType.CANDY) {
+            createWall();
+        } else if (food.getType() == Food.FoodType.LICORICE) {
+            activateInvertControl();
+        } else {
+            // Verzögerung verringern
+            currentDelay = Math.max(MIN_DELAY, currentDelay - DELAY_DECREMENT);
         }
     }
 
     public void resumeGame() {
         paused = false;
+        if (onPauseStatusChangeListener != null) {
+            onPauseStatusChangeListener.onPauseStatusChange(false);
+        }
+        if (controlView != null) {
+            controlView.invalidateReferenceValues();
+        }
+    }
+
+    public void setDirection(char newDirection) {
+        if (invertControlActive) {
+            switch (newDirection) {
+                case 'U':
+                    newDirection = 'D';
+                    break;
+                case 'D':
+                    newDirection = 'U';
+                    break;
+                case 'L':
+                    newDirection = 'R';
+                    break;
+                case 'R':
+                    newDirection = 'L';
+                    break;
+            }
+        }
+        snake.setDirection(newDirection);
     }
 
     private void newFood() {
@@ -143,7 +152,7 @@ public class GameController {
                         (invertControlActive && type == Food.FoodType.LICORICE) ||
                         wall.contains(position) ||
                         snake.getBody().contains(position)) {
-                    continue; // Überspringe Schokolade während des Boosts, Bonbons während der Wand, Lakritz während der invertierten Steuerung, Positionen unter der Mauer und Positionen der Schlange
+                    continue; // Überspringe Food, dessen Event noch aktiv ist, Positionen unter der Mauer und Positionen der Schlange
                 }
                 validFood = true;
                 food = new Food(position, type);
@@ -157,7 +166,7 @@ public class GameController {
         if (!chocolateBoostActive) {
             chocolateBoostActive = true;
             previousDelay = currentDelay;
-            currentDelay = Math.max(MIN_DELAY, currentDelay - CHOCOLATE_SPEED_BOOST);
+            currentDelay = Math.max(MIN_DELAY, (int) (currentDelay / CHOCOLATE_SPEED_FACTOR));
             final long startTime = System.currentTimeMillis();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -168,7 +177,7 @@ public class GameController {
                         onBoostTimerChangeListener.onBoostTimerChange(0);
                     }
                 }
-            }, CHOCOLATE_DURATION);
+            }, CHOCOLATE_SPEED_DURATION);
 
             // Timer für die Anzeige der verbleibenden Zeit
             handler.post(new Runnable() {
@@ -176,7 +185,7 @@ public class GameController {
                 public void run() {
                     if (chocolateBoostActive) {
                         long elapsedTime = System.currentTimeMillis() - startTime;
-                        long remainingTime = CHOCOLATE_DURATION - elapsedTime;
+                        long remainingTime = CHOCOLATE_SPEED_DURATION - elapsedTime;
                         if (onBoostTimerChangeListener != null) {
                             onBoostTimerChangeListener.onBoostTimerChange(remainingTime);
                         }
@@ -300,64 +309,63 @@ public class GameController {
         }
     }
 
-    public void setDirection(char newDirection) {
-        if (invertControlActive) {
-            switch (newDirection) {
-                case 'U':
-                    newDirection = 'D';
-                    break;
-                case 'D':
-                    newDirection = 'U';
-                    break;
-                case 'L':
-                    newDirection = 'R';
-                    break;
-                case 'R':
-                    newDirection = 'L';
-                    break;
-            }
-        }
-        snake.setDirection(newDirection);
-    }
-
     public void pauseGame() {
         paused = true;
+        if (onPauseStatusChangeListener != null) {
+            onPauseStatusChangeListener.onPauseStatusChange(true);
+        }
     }
 
+    public void startGame() {
+        try {
+            setStartValues();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     public void resetGame() {
         try {
             handler.removeCallbacks(gameLoop); // Stoppe den aktuellen Runnable
-            running = true;
-            paused = true; // Spiel ist zu Beginn pausiert
-            snake = new Snake(NUM_BLOCKS / 2, NUM_BLOCKS / 2);
-            points = 0; // Punkte zurücksetzen
-            currentDelay = START_DELAY; // Verzögerung zurücksetzen
-            previousDelay = START_DELAY; // Vorherige Verzögerung zurücksetzen
-            chocolateBoostActive = false; // Schokoladen-Boost deaktivieren
-            wall.clear(); // Mauer zurücksetzen
-            wallActive = false; // Wand deaktivieren
-            invertControlActive = false; // Steuerung normal
-            if (onPointsChangeListener != null) {
-                onPointsChangeListener.onPointsChange(points);
-            }
-            if (onBoostTimerChangeListener != null) {
-                onBoostTimerChangeListener.onBoostTimerChange(0);
-            }
-            if (onWallTimerChangeListener != null) {
-                onWallTimerChangeListener.onWallTimerChange(0);
-            }
-            if (onInvertControlTimerChangeListener != null) {
-                onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
-            }
-            newFood();
-            handler.post(gameLoop); // Starte den Runnable neu
+            setStartValues();
+            gameView.invalidate();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    private void setStartValues() {
+        running = true;
+        paused = true; // Spiel ist zu Beginn pausiert
+        snake = new Snake(NUM_BLOCKS / 2, NUM_BLOCKS / 2);
+        points = 0; // Punkte zurücksetzen
+        currentDelay = START_DELAY; // Verzögerung zurücksetzen
+        previousDelay = START_DELAY; // Vorherige Verzögerung zurücksetzen
+        chocolateBoostActive = false; // Schokoladen-Boost deaktivieren
+        wall.clear(); // Mauer zurücksetzen
+        wallActive = false; // Wand deaktivieren
+        invertControlActive = false; // Steuerung normal
+        if (onPointsChangeListener != null) {
+            onPointsChangeListener.onPointsChange(points);
+        }
+        if (onBoostTimerChangeListener != null) {
+            onBoostTimerChangeListener.onBoostTimerChange(0);
+        }
+        if (onWallTimerChangeListener != null) {
+            onWallTimerChangeListener.onWallTimerChange(0);
+        }
+        if (onInvertControlTimerChangeListener != null) {
+            onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
+        }
+        newFood();
+        handler.post(gameLoop); // Starte den Runnable
+    }
+
     public void setOnPointsChangeListener(OnPointsChangeListener listener) {
         this.onPointsChangeListener = listener;
+    }
+
+    public void setOnPauseStatusChangeListener(OnPauseStatusChangeListener listener) {
+        this.onPauseStatusChangeListener = listener;
     }
 
     public void setOnBoostTimerChangeListener(OnBoostTimerChangeListener listener) {
@@ -398,6 +406,10 @@ public class GameController {
 
     public interface OnPointsChangeListener {
         void onPointsChange(int points);
+    }
+
+    public interface OnPauseStatusChangeListener {
+        void onPauseStatusChange(boolean pauseStatus);
     }
 
     public interface OnBoostTimerChangeListener {

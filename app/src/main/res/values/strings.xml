@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">sensor2</string>
+    <string name="app_name">Snake</string>
     <string name="pause_button">Pausebutton</string>
     <string name="sensor_button">Sensorbutton</string>
 </resources>

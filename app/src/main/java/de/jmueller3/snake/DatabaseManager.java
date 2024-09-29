@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -41,17 +41,5 @@ public class DatabaseManager {
             cursor.moveToFirst();
         }
         return cursor;
-    }
-
-    public int update(long _id, String playerName, int score) {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(DatabaseHelper.PLAYER_NAME, playerName);
-        contentValues.put(DatabaseHelper.SCORE, score);
-        return database.update(DatabaseHelper.DATABASE_TABLE, contentValues,
-                DatabaseHelper.SCORE_ID + "=" + _id, null);
-    }
-
-    public void delete(long _id) {
-        database.delete(DatabaseHelper.DATABASE_TABLE, DatabaseHelper.SCORE_ID + "=" + _id, null);
     }
 }

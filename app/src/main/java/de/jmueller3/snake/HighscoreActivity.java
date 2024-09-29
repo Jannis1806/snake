@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.sql.SQLDataException;
 import java.util.ArrayList;
+
+import de.jmueller3.snake.R;
 
 public class HighscoreActivity extends AppCompatActivity {
     private DatabaseManager databaseManager;

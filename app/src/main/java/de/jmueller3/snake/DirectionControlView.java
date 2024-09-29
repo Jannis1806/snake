@@ -1,4 +1,4 @@
-package de.kampmann.sensor2;
+package de.jmueller3.snake;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,7 +19,7 @@ public class DirectionControlView extends View {
     public DirectionControlView(Context context, AttributeSet attrs) {
         super(context, attrs);
         paint = new Paint();
-        paint.setColor(Color.parseColor("#3F48CC")); // Setze die gleiche Farbe wie die Buttons
+        paint.setColor(Color.parseColor("#3F48CC")); // Hintergrundfarbe
         paint.setStyle(Paint.Style.FILL);
 
         linePaint = new Paint();
@@ -36,8 +36,8 @@ public class DirectionControlView extends View {
         super.onDraw(canvas);
         int width = getWidth();
         int height = getHeight();
-        int padding = 10; // Abstand um das Rechteck hinzufügen
-        int cornerRadius = 20; // Radius für die abgerundeten Ecken
+        int padding = 10;
+        int cornerRadius = 20;
         int left = padding;
         int top = padding;
         int right = width - padding;
