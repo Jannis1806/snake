@@ -30,6 +30,12 @@ public class GameController {
     private boolean chocolateBoostActive = false; // Schokoladen-Boost aktiv
     private boolean wallActive = false; // Wand aktiv
     private boolean invertControlActive = false; // Steuerung invertiert
+    private long chocolateBoostRemainingTime = 0;
+    private long wallRemainingTime = 0;
+    private long invertControlRemainingTime = 0;
+    private long chocolateBoostEndTime = 0;
+    private long wallEndTime = 0;
+    private long invertControlEndTime = 0;
     private Handler handler;
     private Runnable gameLoop;
     private OnPointsChangeListener onPointsChangeListener;
@@ -116,6 +122,21 @@ public class GameController {
         if (controlView != null) {
             controlView.invalidateReferenceValues();
         }
+        // Timer-Callbacks wieder hinzufügen und verbleibende Zeit verwenden
+        long currentTime = System.currentTimeMillis();
+        if (chocolateBoostRemainingTime > 0) {
+            chocolateBoostEndTime = currentTime + chocolateBoostRemainingTime;
+            startChocolateBoostTimer(chocolateBoostRemainingTime);
+        }
+        if (wallRemainingTime > 0) {
+            wallEndTime = currentTime + wallRemainingTime;
+            startWallTimer(wallRemainingTime);
+        }
+        if (invertControlRemainingTime > 0) {
+            invertControlEndTime = currentTime + invertControlRemainingTime;
+            startInvertControlTimer(invertControlRemainingTime);
+        }
+        handler.post(gameLoop);
     }
 
     public void setDirection(char newDirection) {
@@ -167,32 +188,8 @@ public class GameController {
             chocolateBoostActive = true;
             previousDelay = currentDelay;
             currentDelay = Math.max(MIN_DELAY, (int) (currentDelay / CHOCOLATE_SPEED_FACTOR));
-            final long startTime = System.currentTimeMillis();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    chocolateBoostActive = false;
-                    currentDelay = previousDelay;
-                    if (onBoostTimerChangeListener != null) {
-                        onBoostTimerChangeListener.onBoostTimerChange(0);
-                    }
-                }
-            }, CHOCOLATE_SPEED_DURATION);
-
-            // Timer für die Anzeige der verbleibenden Zeit
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (chocolateBoostActive) {
-                        long elapsedTime = System.currentTimeMillis() - startTime;
-                        long remainingTime = CHOCOLATE_SPEED_DURATION - elapsedTime;
-                        if (onBoostTimerChangeListener != null) {
-                            onBoostTimerChangeListener.onBoostTimerChange(remainingTime);
-                        }
-                        handler.postDelayed(this, 100);
-                    }
-                }
-            });
+            chocolateBoostEndTime = System.currentTimeMillis() + CHOCOLATE_SPEED_DURATION;
+            startChocolateBoostTimer(CHOCOLATE_SPEED_DURATION);
         }
     }
 
@@ -224,7 +221,47 @@ public class GameController {
             }
         }
         wallActive = true;
-        final long startTime = System.currentTimeMillis();
+        wallEndTime = System.currentTimeMillis() + CANDY_WALL_DURATION;
+        startWallTimer(CANDY_WALL_DURATION);
+    }
+
+    private void activateInvertControl() {
+        if (!invertControlActive) {
+            invertControlActive = true;
+            invertControlEndTime = System.currentTimeMillis() + LICORICE_INVERT_DURATION;
+            startInvertControlTimer(LICORICE_INVERT_DURATION);
+        }
+    }
+
+    private void startChocolateBoostTimer(long duration) {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                chocolateBoostActive = false;
+                currentDelay = previousDelay;
+                if (onBoostTimerChangeListener != null) {
+                    onBoostTimerChangeListener.onBoostTimerChange(0);
+                }
+            }
+        }, duration);
+
+        // Timer für die Anzeige der verbleibenden Zeit
+        Runnable chocolateBoostTimerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (chocolateBoostActive) {
+                    long remainingTime = chocolateBoostEndTime - System.currentTimeMillis();
+                    if (onBoostTimerChangeListener != null) {
+                        onBoostTimerChangeListener.onBoostTimerChange(remainingTime);
+                    }
+                    handler.postDelayed(this, 100);
+                }
+            }
+        };
+        handler.post(chocolateBoostTimerRunnable);
+    }
+
+    private void startWallTimer(long duration) {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -234,53 +271,49 @@ public class GameController {
                     onWallTimerChangeListener.onWallTimerChange(0);
                 }
             }
-        }, CANDY_WALL_DURATION);
+        }, duration);
 
         // Timer für die Anzeige der verbleibenden Zeit der Wand
-        handler.post(new Runnable() {
+        Runnable wallTimerRunnable = new Runnable() {
             @Override
             public void run() {
                 if (wallActive) {
-                    long elapsedTime = System.currentTimeMillis() - startTime;
-                    long remainingTime = CANDY_WALL_DURATION - elapsedTime;
+                    long remainingTime = wallEndTime - System.currentTimeMillis();
                     if (onWallTimerChangeListener != null) {
                         onWallTimerChangeListener.onWallTimerChange(remainingTime);
                     }
                     handler.postDelayed(this, 100);
                 }
             }
-        });
+        };
+        handler.post(wallTimerRunnable);
     }
 
-    private void activateInvertControl() {
-        if (!invertControlActive) {
-            invertControlActive = true;
-            final long startTime = System.currentTimeMillis();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    invertControlActive = false;
-                    if (onInvertControlTimerChangeListener != null) {
-                        onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
-                    }
+    private void startInvertControlTimer(long duration) {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                invertControlActive = false;
+                if (onInvertControlTimerChangeListener != null) {
+                    onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
                 }
-            }, LICORICE_INVERT_DURATION);
+            }
+        }, duration);
 
-            // Timer für die Anzeige der verbleibenden Zeit der invertierten Steuerung
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (invertControlActive) {
-                        long elapsedTime = System.currentTimeMillis() - startTime;
-                        long remainingTime = LICORICE_INVERT_DURATION - elapsedTime;
-                        if (onInvertControlTimerChangeListener != null) {
-                            onInvertControlTimerChangeListener.onInvertControlTimerChange(remainingTime);
-                        }
-                        handler.postDelayed(this, 100);
+        // Timer für die Anzeige der verbleibenden Zeit der invertierten Steuerung
+        Runnable invertControlTimerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (invertControlActive) {
+                    long remainingTime = invertControlEndTime - System.currentTimeMillis();
+                    if (onInvertControlTimerChangeListener != null) {
+                        onInvertControlTimerChangeListener.onInvertControlTimerChange(remainingTime);
                     }
+                    handler.postDelayed(this, 100);
                 }
-            });
-        }
+            }
+        };
+        handler.post(invertControlTimerRunnable);
     }
 
     private boolean checkWallCollision() {
@@ -314,6 +347,19 @@ public class GameController {
         if (onPauseStatusChangeListener != null) {
             onPauseStatusChangeListener.onPauseStatusChange(true);
         }
+        // Timer-Callbacks entfernen und verbleibende Zeit speichern
+        handler.removeCallbacks(gameLoop);
+        long currentTime = System.currentTimeMillis();
+        if (chocolateBoostActive) {
+            chocolateBoostRemainingTime = chocolateBoostEndTime - currentTime;
+        }
+        if (wallActive) {
+            wallRemainingTime = wallEndTime - currentTime;
+        }
+        if (invertControlActive) {
+            invertControlRemainingTime = invertControlEndTime - currentTime;
+        }
+        handler.removeCallbacksAndMessages(null);
     }
 
     public void startGame() {
@@ -357,7 +403,6 @@ public class GameController {
             onInvertControlTimerChangeListener.onInvertControlTimerChange(0);
         }
         newFood();
-        handler.post(gameLoop); // Starte den Runnable
     }
 
     public void setOnPointsChangeListener(OnPointsChangeListener listener) {
